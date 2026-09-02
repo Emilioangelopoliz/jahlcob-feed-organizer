@@ -1,5 +1,4 @@
 const express = require('express');
-const axios = require('axios');
 const cors = require('cors');
 require('dotenv').config();
 
@@ -26,17 +25,19 @@ const HTML = `
         .login-section button:hover { background: #1d4ed8; }
         .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 2rem; max-width: 600px; margin-left: auto; margin-right: auto; }
         .stat-card { background: #1a1a1a; padding: 1rem; border-radius: 0.5rem; text-align: center; }
-        .stat-number { font-size: 1.8rem; font-weight: bold; }
+        .stat-number { font-size: 1.8rem; font-weight: bold; color: #2563eb; }
         .feeds-wrapper { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 2rem; }
         .feed { background: #0a0a0a; border-radius: 0.5rem; border: 1px solid #222; }
         .feed-header { padding: 1.5rem; border-bottom: 2px solid; text-align: center; }
         .feed-title { font-size: 1.3rem; font-weight: bold; }
         .grid { padding: 1rem; display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; max-height: 700px; overflow-y: auto; }
-        .post-card { border-radius: 0.5rem; overflow: hidden; cursor: pointer; border: 3px solid; transition: all 0.3s; }
-        .post-image { width: 100%; height: 150px; object-fit: cover; }
+        .post-card { border-radius: 0.5rem; overflow: hidden; cursor: pointer; border: 3px solid; transition: all 0.3s; background: #1a1a1a; }
+        .post-card:hover { transform: scale(1.02); }
+        .post-image { width: 100%; height: 150px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center; font-size: 2rem; }
         .post-info { padding: 0.75rem; font-size: 0.85rem; }
         .buttons { text-align: center; margin-bottom: 2rem; }
         button { padding: 0.75rem 1.5rem; background: #2563eb; color: white; border: none; border-radius: 0.375rem; font-weight: bold; cursor: pointer; margin: 0.5rem; }
+        button:hover { background: #1d4ed8; }
         .hidden { display: none; }
         .loading { text-align: center; padding: 2rem; color: #888; }
     </style>
@@ -89,6 +90,7 @@ const HTML = `
 
             <div class="buttons">
                 <button onclick="exportarDecisiones()">📥 Exportar Decisiones</button>
+                <button onclick="resetear()">🔄 Resetear</button>
             </div>
         </div>
     </div>
@@ -117,7 +119,7 @@ const HTML = `
                     document.getElementById('appSection').classList.remove('hidden');
                     render();
                 } else {
-                    alert('Error: ' + data.error);
+                    alert('Error: ' + (data.message || data.error));
                 }
             } catch (error) {
                 alert('Error: ' + error.message);
@@ -144,13 +146,21 @@ const HTML = `
             const archivePosts = allPosts.filter(p => p.status === "archivar");
             const keepPosts = allPosts.filter(p => p.status === "mantener");
 
-            archivePosts.forEach(post => {
-                archiveGrid.appendChild(createPostCard(post, true));
-            });
+            if (archivePosts.length === 0) {
+                archiveGrid.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:#666;padding:2rem;">Sin posts para archivar</div>';
+            } else {
+                archivePosts.forEach(post => {
+                    archiveGrid.appendChild(createPostCard(post, true));
+                });
+            }
 
-            keepPosts.forEach(post => {
-                keepGrid.appendChild(createPostCard(post, false));
-            });
+            if (keepPosts.length === 0) {
+                keepGrid.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:#666;padding:2rem;">Sin posts para mantener</div>';
+            } else {
+                keepPosts.forEach(post => {
+                    keepGrid.appendChild(createPostCard(post, false));
+                });
+            }
 
             document.getElementById('totalPosts').textContent = allPosts.length;
             document.getElementById('archiveCount').textContent = archivePosts.length;
@@ -164,7 +174,10 @@ const HTML = `
             card.style.opacity = isArchive ? '0.65' : '1';
             card.onclick = () => togglePost(post.id);
             
-            card.innerHTML = '<img src="' + post.url + '" class="post-image" alt="' + post.couple + '"><div class="post-info"><div>' + post.couple + '</div></div>';
+            const colors = ['#667eea', '#764ba2', '#f093fb', '#4facfe', '#00f2fe', '#43e97b', '#fa709a'];
+            const bgColor = colors[post.id % colors.length];
+            
+            card.innerHTML = '<div class="post-image" style="background:linear-gradient(135deg,' + bgColor + ' 0%, ' + bgColor + '88 100%);">📸</div><div class="post-info"><div style="font-weight:bold;">' + post.couple + '</div><div style="color:#888;">' + post.venue + '</div></div>';
             
             return card;
         }
@@ -178,7 +191,9 @@ const HTML = `
                 username: document.getElementById('usernameInput').value,
                 totalPosts: allPosts.length,
                 aArchivar: archivePosts.length,
-                aMantener: keepPosts.length
+                aMantener: keepPosts.length,
+                posts_archivar: archivePosts.map(p => ({ id: p.id, couple: p.couple, venue: p.venue })),
+                posts_mantener: keepPosts.map(p => ({ id: p.id, couple: p.couple, venue: p.venue }))
             };
 
             const contenido = JSON.stringify(resumen, null, 2);
@@ -189,10 +204,31 @@ const HTML = `
             a.download = 'JAHLCOB_Decisiones_' + new Date().getTime() + '.json';
             a.click();
         }
+
+        function resetear() {
+            if (confirm('¿Seguro que deseas resetear y mantener todos los posts?')) {
+                allPosts.forEach(p => p.status = 'mantener');
+                render();
+            }
+        }
     </script>
 </body>
 </html>
 `;
+
+// Mock posts de prueba
+const MOCK_POSTS = [
+  { id: 1, couple: "Alina & Steven", venue: "The Fives Beach", engagement: "8.2%", views: 1243, status: "mantener" },
+  { id: 2, couple: "Anastasia & Victor", venue: "Playa Grande", engagement: "5.1%", views: 892, status: "mantener" },
+  { id: 3, couple: "Dayna & Dave", venue: "Dreams Sapphire", engagement: "3.8%", views: 654, status: "archivar" },
+  { id: 4, couple: "Mahendra & Michael", venue: "The Fives Hotels", engagement: "6.5%", views: 1521, status: "mantener" },
+  { id: 5, couple: "Yolanda & Jazmin", venue: "Testimonial", engagement: "2.3%", views: 456, status: "archivar" },
+  { id: 6, couple: "Pareja 6", venue: "Riviera Maya", engagement: "4.7%", views: 823, status: "mantener" },
+  { id: 7, couple: "Pareja 7", venue: "Los Cabos", engagement: "2.1%", views: 341, status: "archivar" },
+  { id: 8, couple: "Pareja 8", venue: "Riviera Maya", engagement: "5.8%", views: 1134, status: "mantener" },
+  { id: 9, couple: "Pareja 9", venue: "Los Cabos", engagement: "3.2%", views: 567, status: "archivar" },
+  { id: 10, couple: "Pareja 10", venue: "Riviera Maya", engagement: "7.1%", views: 1876, status: "mantener" },
+];
 
 // Servir HTML
 app.get('/', (req, res) => {
@@ -200,47 +236,28 @@ app.get('/', (req, res) => {
 });
 
 // API para descargar posts
-app.post('/api/fetch-posts', async (req, res) => {
+app.post('/api/fetch-posts', (req, res) => {
   try {
     const { username } = req.body;
     
     if (!username) {
-      return res.status(400).json({ error: 'Username requerido' });
+      return res.status(400).json({ error: 'Username requerido', success: false });
     }
 
-    const response = await axios.get(`https://www.instagram.com/${username}/?__a=1`, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0'
-      }
-    });
-
-    const userData = response.data.graphql.user;
-    const media = userData.edge_owner_to_timeline_media.edges;
-
-    const posts = media.map((edge, idx) => ({
-      id: idx + 1,
-      username: username,
-      couple: `Post ${idx + 1}`,
-      venue: username,
-      engagement: `${(Math.random() * 10).toFixed(1)}%`,
-      views: Math.floor(Math.random() * 2000) + 100,
-      status: idx % 2 === 0 ? 'mantener' : 'archivar',
-      url: edge.node.display_url,
-      likes: Math.floor(Math.random() * 500),
-      timestamp: edge.node.taken_at_timestamp
-    }));
-
+    // Retornar mock posts
     res.json({ 
       success: true,
-      totalPosts: posts.length,
-      posts: posts.slice(0, 100)
+      totalPosts: MOCK_POSTS.length,
+      posts: MOCK_POSTS,
+      message: `Cargados ${MOCK_POSTS.length} posts de @${username} (datos de prueba)`
     });
 
   } catch (error) {
     console.error('Error:', error.message);
     res.status(500).json({ 
       error: 'Error al descargar posts',
-      message: error.message 
+      message: error.message,
+      success: false
     });
   }
 });
@@ -265,7 +282,7 @@ app.post('/api/save-decisions', (req, res) => {
     });
 
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: error.message, success: false });
   }
 });
 
