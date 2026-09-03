@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const fs = require('fs');
 const path = require('path');
+const { exec } = require('child_process');
 require('dotenv').config();
 
 const app = express();
@@ -15,9 +16,26 @@ try {
   REAL_POSTS = JSON.parse(postsData);
   console.log(`✅ Cargados ${REAL_POSTS.length} posts reales`);
 } catch (e) {
-  console.error('No se pueden cargar posts_clean.json, usando mock');
-  REAL_POSTS = [];
+  console.error('No se pueden cargar posts_clean.json');
 }
+
+// Descomprimir imágenes si existe el tar.gz
+const imagesPath = path.join(__dirname, 'public', 'images');
+const tarPath = path.join(__dirname, 'public', 'images.tar.gz');
+
+if (fs.existsSync(tarPath) && !fs.existsSync(imagesPath)) {
+  console.log('⏳ Descomprimiendo imágenes...');
+  exec(`cd ${path.join(__dirname, 'public')} && tar -xzf images.tar.gz`, (err) => {
+    if (err) {
+      console.error('Error descomprimiendo:', err);
+    } else {
+      console.log('✅ Imágenes descomprimidas');
+    }
+  });
+}
+
+// Servir archivos estáticos
+app.use(express.static(path.join(__dirname, 'public')));
 
 const HTML = `
 <!DOCTYPE html>
@@ -46,7 +64,7 @@ const HTML = `
         .grid { padding: 1rem; display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; max-height: 700px; overflow-y: auto; }
         .post-card { border-radius: 0.5rem; overflow: hidden; cursor: pointer; border: 3px solid; transition: all 0.3s; background: #1a1a1a; }
         .post-card:hover { transform: scale(1.02); }
-        .post-image { width: 100%; height: 150px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center; font-size: 2rem; }
+        .post-image { width: 100%; height: 150px; background-size: cover; background-position: center; display: flex; align-items: center; justify-content: center; }
         .post-info { padding: 0.75rem; font-size: 0.85rem; }
         .buttons { text-align: center; margin-bottom: 2rem; }
         button { padding: 0.75rem 1.5rem; background: #2563eb; color: white; border: none; border-radius: 0.375rem; font-weight: bold; cursor: pointer; margin: 0.5rem; }
@@ -68,7 +86,7 @@ const HTML = `
             <input type="text" id="usernameInput" placeholder="@jahlcob" value="jahlcob" disabled>
             <button onclick="loadPosts()">Cargar Posts Reales</button>
             <div id="loadingMsg" class="loading hidden">Cargando posts...</div>
-            <div class="info">✨ Se cargarán los 1,426 posts reales de tu feed</div>
+            <div class="info">✨ Se cargarán los posts reales de tu feed con FOTOS</div>
         </div>
 
         <div id="appSection" class="hidden">
@@ -187,10 +205,11 @@ const HTML = `
             card.style.opacity = isArchive ? '0.65' : '1';
             card.onclick = () => togglePost(post.id);
             
-            const colors = ['#667eea', '#764ba2', '#f093fb', '#4facfe', '#00f2fe', '#43e97b', '#fa709a'];
-            const bgColor = colors[post.id % colors.length];
+            const imgStyle = post.image_path ? 
+                `background-image: url('${post.image_path}');` : 
+                'background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);';
             
-            card.innerHTML = '<div class="post-image" style="background:linear-gradient(135deg,' + bgColor + ' 0%, ' + bgColor + '88 100%);">📸</div><div class="post-info"><div style="font-weight:bold;">' + post.couple + '</div><div style="color:#888;">' + post.venue + '</div></div>';
+            card.innerHTML = '<div class="post-image" style="' + imgStyle + '"></div><div class="post-info"><div style="font-weight:bold;">' + post.couple + '</div><div style="color:#888;">' + post.venue + '</div></div>';
             
             return card;
         }
@@ -243,16 +262,13 @@ app.post('/api/fetch-posts', (req, res) => {
       return res.status(400).json({ error: 'Username requerido', success: false });
     }
 
-    // Usar posts reales o mock si no están disponibles
-    const posts = REAL_POSTS.length > 0 ? REAL_POSTS : generateMockPosts();
+    const posts = REAL_POSTS.length > 0 ? REAL_POSTS : [];
 
     res.json({ 
       success: true,
       totalPosts: posts.length,
-      posts: posts.slice(0, 100), // Mostrar primeros 100 para no saturar
-      message: REAL_POSTS.length > 0 ? 
-        `✨ Cargados ${posts.length} posts reales de @${username}` : 
-        `📊 Modo demo: ${posts.length} posts de prueba`
+      posts: posts.slice(0, 100),
+      message: `✨ Cargados ${posts.length} posts de @${username}`
     });
 
   } catch (error) {
@@ -265,24 +281,6 @@ app.post('/api/fetch-posts', (req, res) => {
   }
 });
 
-function generateMockPosts() {
-  const couples = [
-    "Alina & Steven", "Anastasia & Victor", "Dayna & Dave",
-    "Mahendra & Michael", "Pareja 5 & Pareja 6"
-  ];
-  const venues = ["The Fives Beach", "Dreams Sapphire", "Playa Grande"];
-  
-  return couples.flatMap((couple, i) => 
-    Array(3).fill(null).map((_, j) => ({
-      id: i * 3 + j,
-      couple,
-      venue: venues[j % venues.length],
-      engagement: `${(Math.random() * 10).toFixed(1)}%`,
-      status: (i * 3 + j) % 2 === 0 ? 'mantener' : 'archivar'
-    }))
-  );
-}
-
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', posts: REAL_POSTS.length, timestamp: new Date() });
 });
@@ -291,4 +289,5 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`✅ Server running on port ${PORT}`);
   console.log(`📊 Posts cargados: ${REAL_POSTS.length}`);
+  console.log(`📸 Sirviendo imágenes desde /public/images`);
 });
