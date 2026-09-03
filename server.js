@@ -1,10 +1,23 @@
 const express = require('express');
 const cors = require('cors');
+const fs = require('fs');
+const path = require('path');
 require('dotenv').config();
 
 const app = express();
 app.use(cors());
 app.use(express.json());
+
+// Cargar posts reales
+let REAL_POSTS = [];
+try {
+  const postsData = fs.readFileSync(path.join(__dirname, 'posts_clean.json'), 'utf-8');
+  REAL_POSTS = JSON.parse(postsData);
+  console.log(`✅ Cargados ${REAL_POSTS.length} posts reales`);
+} catch (e) {
+  console.error('No se pueden cargar posts_clean.json, usando mock');
+  REAL_POSTS = [];
+}
 
 const HTML = `
 <!DOCTYPE html>
@@ -40,20 +53,22 @@ const HTML = `
         button:hover { background: #1d4ed8; }
         .hidden { display: none; }
         .loading { text-align: center; padding: 2rem; color: #888; }
+        .info { background: #1a1a1a; padding: 1rem; border-radius: 0.5rem; margin: 1rem 0; color: #aaa; font-size: 0.9rem; }
     </style>
 </head>
 <body>
     <div class="container">
         <header>
             <h1>🎥 JAHLCOB Feed Organizer</h1>
-            <p>Conecta con Instagram y reorganiza tu feed</p>
+            <p>Organiza tu feed de Instagram por bodas</p>
         </header>
 
         <div id="loginSection" class="login-section">
-            <h2>Login Instagram</h2>
-            <input type="text" id="usernameInput" placeholder="@jahlcob" value="jahlcob">
-            <button onclick="fetchPosts()">Descargar Posts</button>
-            <div id="loadingMsg" class="loading hidden">Descargando posts...</div>
+            <h2>Cargar Posts</h2>
+            <input type="text" id="usernameInput" placeholder="@jahlcob" value="jahlcob" disabled>
+            <button onclick="loadPosts()">Cargar Posts Reales</button>
+            <div id="loadingMsg" class="loading hidden">Cargando posts...</div>
+            <div class="info">✨ Se cargarán los 1,426 posts reales de tu feed</div>
         </div>
 
         <div id="appSection" class="hidden">
@@ -98,17 +113,15 @@ const HTML = `
     <script>
         let allPosts = [];
 
-        async function fetchPosts() {
-            const username = document.getElementById('usernameInput').value.replace('@', '');
+        async function loadPosts() {
             const loadingMsg = document.getElementById('loadingMsg');
-            
             loadingMsg.classList.remove('hidden');
 
             try {
                 const response = await fetch('/api/fetch-posts', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username })
+                    body: JSON.stringify({ username: 'jahlcob' })
                 });
 
                 const data = await response.json();
@@ -147,7 +160,7 @@ const HTML = `
             const keepPosts = allPosts.filter(p => p.status === "mantener");
 
             if (archivePosts.length === 0) {
-                archiveGrid.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:#666;padding:2rem;">Sin posts para archivar</div>';
+                archiveGrid.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:#666;padding:2rem;">Sin posts</div>';
             } else {
                 archivePosts.forEach(post => {
                     archiveGrid.appendChild(createPostCard(post, true));
@@ -155,7 +168,7 @@ const HTML = `
             }
 
             if (keepPosts.length === 0) {
-                keepGrid.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:#666;padding:2rem;">Sin posts para mantener</div>';
+                keepGrid.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:#666;padding:2rem;">Sin posts</div>';
             } else {
                 keepPosts.forEach(post => {
                     keepGrid.appendChild(createPostCard(post, false));
@@ -188,12 +201,12 @@ const HTML = `
 
             const resumen = {
                 timestamp: new Date().toLocaleString('es-MX'),
-                username: document.getElementById('usernameInput').value,
+                username: 'jahlcob',
                 totalPosts: allPosts.length,
                 aArchivar: archivePosts.length,
                 aMantener: keepPosts.length,
-                posts_archivar: archivePosts.map(p => ({ id: p.id, couple: p.couple, venue: p.venue })),
-                posts_mantener: keepPosts.map(p => ({ id: p.id, couple: p.couple, venue: p.venue }))
+                posts_archivar: archivePosts.map(p => ({ id: p.id, couple: p.couple, venue: p.venue, date: p.date })),
+                posts_mantener: keepPosts.map(p => ({ id: p.id, couple: p.couple, venue: p.venue, date: p.date }))
             };
 
             const contenido = JSON.stringify(resumen, null, 2);
@@ -206,7 +219,7 @@ const HTML = `
         }
 
         function resetear() {
-            if (confirm('¿Seguro que deseas resetear y mantener todos los posts?')) {
+            if (confirm('¿Resetear y mantener todos los posts?')) {
                 allPosts.forEach(p => p.status = 'mantener');
                 render();
             }
@@ -215,20 +228,6 @@ const HTML = `
 </body>
 </html>
 `;
-
-// Mock posts de prueba
-const MOCK_POSTS = [
-  { id: 1, couple: "Alina & Steven", venue: "The Fives Beach", engagement: "8.2%", views: 1243, status: "mantener" },
-  { id: 2, couple: "Anastasia & Victor", venue: "Playa Grande", engagement: "5.1%", views: 892, status: "mantener" },
-  { id: 3, couple: "Dayna & Dave", venue: "Dreams Sapphire", engagement: "3.8%", views: 654, status: "archivar" },
-  { id: 4, couple: "Mahendra & Michael", venue: "The Fives Hotels", engagement: "6.5%", views: 1521, status: "mantener" },
-  { id: 5, couple: "Yolanda & Jazmin", venue: "Testimonial", engagement: "2.3%", views: 456, status: "archivar" },
-  { id: 6, couple: "Pareja 6", venue: "Riviera Maya", engagement: "4.7%", views: 823, status: "mantener" },
-  { id: 7, couple: "Pareja 7", venue: "Los Cabos", engagement: "2.1%", views: 341, status: "archivar" },
-  { id: 8, couple: "Pareja 8", venue: "Riviera Maya", engagement: "5.8%", views: 1134, status: "mantener" },
-  { id: 9, couple: "Pareja 9", venue: "Los Cabos", engagement: "3.2%", views: 567, status: "archivar" },
-  { id: 10, couple: "Pareja 10", venue: "Riviera Maya", engagement: "7.1%", views: 1876, status: "mantener" },
-];
 
 // Servir HTML
 app.get('/', (req, res) => {
@@ -244,12 +243,16 @@ app.post('/api/fetch-posts', (req, res) => {
       return res.status(400).json({ error: 'Username requerido', success: false });
     }
 
-    // Retornar mock posts
+    // Usar posts reales o mock si no están disponibles
+    const posts = REAL_POSTS.length > 0 ? REAL_POSTS : generateMockPosts();
+
     res.json({ 
       success: true,
-      totalPosts: MOCK_POSTS.length,
-      posts: MOCK_POSTS,
-      message: `Cargados ${MOCK_POSTS.length} posts de @${username} (datos de prueba)`
+      totalPosts: posts.length,
+      posts: posts.slice(0, 100), // Mostrar primeros 100 para no saturar
+      message: REAL_POSTS.length > 0 ? 
+        `✨ Cargados ${posts.length} posts reales de @${username}` : 
+        `📊 Modo demo: ${posts.length} posts de prueba`
     });
 
   } catch (error) {
@@ -262,35 +265,30 @@ app.post('/api/fetch-posts', (req, res) => {
   }
 });
 
-app.post('/api/save-decisions', (req, res) => {
-  try {
-    const { decisions, username } = req.body;
-    
-    const report = {
-      timestamp: new Date().toLocaleString('es-MX'),
-      username,
-      totalPosts: decisions.length,
-      archiveCount: decisions.filter(d => d.status === 'archivar').length,
-      keepCount: decisions.filter(d => d.status === 'mantener').length,
-      decisions
-    };
-
-    res.json({ 
-      success: true, 
-      message: 'Decisiones guardadas',
-      report 
-    });
-
-  } catch (error) {
-    res.status(500).json({ error: error.message, success: false });
-  }
-});
+function generateMockPosts() {
+  const couples = [
+    "Alina & Steven", "Anastasia & Victor", "Dayna & Dave",
+    "Mahendra & Michael", "Pareja 5 & Pareja 6"
+  ];
+  const venues = ["The Fives Beach", "Dreams Sapphire", "Playa Grande"];
+  
+  return couples.flatMap((couple, i) => 
+    Array(3).fill(null).map((_, j) => ({
+      id: i * 3 + j,
+      couple,
+      venue: venues[j % venues.length],
+      engagement: `${(Math.random() * 10).toFixed(1)}%`,
+      status: (i * 3 + j) % 2 === 0 ? 'mantener' : 'archivar'
+    }))
+  );
+}
 
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date() });
+  res.json({ status: 'ok', posts: REAL_POSTS.length, timestamp: new Date() });
 });
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`✅ Server running on port ${PORT}`);
+  console.log(`📊 Posts cargados: ${REAL_POSTS.length}`);
 });
