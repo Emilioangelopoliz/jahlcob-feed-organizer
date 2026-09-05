@@ -10,6 +10,7 @@
     "node": ">=18"
   },
   "dependencies": {
-    "express": "^4.19.2"
+    "adm-zip": "^0.5.18",
+    "express": "^4.22.2"
   }
 }
