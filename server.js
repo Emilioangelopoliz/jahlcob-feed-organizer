@@ -1,10 +1,36 @@
 const express = require('express');
 const fs = require('fs');
 const path = require('path');
+const AdmZip = require('adm-zip');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 const STATE_FILE = path.join(__dirname, 'state.json');
+const REAL_COVERS_DIR = path.join(__dirname, 'real_covers');
+const REAL_COVERS_ZIP = path.join(__dirname, 'real_covers.zip');
+
+// Si subiste real_covers.zip pero la carpeta real_covers/ no existe (o esta vacia),
+// la descomprimimos automaticamente al arrancar. Asi no hay que subir 213 archivos sueltos a GitHub.
+function ensureRealCoversExtracted() {
+  try {
+    if (!fs.existsSync(REAL_COVERS_ZIP)) return;
+    const zipStat = fs.statSync(REAL_COVERS_ZIP);
+    const markerFile = path.join(__dirname, '.real_covers_extracted_at');
+    const alreadyExtracted = fs.existsSync(REAL_COVERS_DIR) && fs.readdirSync(REAL_COVERS_DIR).length > 0;
+    const marker = fs.existsSync(markerFile) ? fs.readFileSync(markerFile, 'utf8') : '';
+    const needsExtract = !alreadyExtracted || marker !== String(zipStat.mtimeMs);
+    if (needsExtract) {
+      console.log('Descomprimiendo real_covers.zip ...');
+      const zip = new AdmZip(REAL_COVERS_ZIP);
+      zip.extractAllTo(__dirname, true);
+      fs.writeFileSync(markerFile, String(zipStat.mtimeMs));
+      console.log('real_covers/ listo.');
+    }
+  } catch (e) {
+    console.error('Error descomprimiendo real_covers.zip:', e);
+  }
+}
+ensureRealCoversExtracted();
 
 app.use(express.json({ limit: '2mb' }));
 
