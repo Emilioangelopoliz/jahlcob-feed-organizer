@@ -1,316 +1,348 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>JAHLCOB Feed Organizer</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: #000;
-            color: #fff;
-            padding: 1rem;
-        }
-
-        .container {
-            max-width: 1600px;
-            margin: 0 auto;
-        }
-
-        header {
-            margin-bottom: 2rem;
-            text-align: center;
-        }
-
-        h1 {
-            font-size: 2rem;
-            margin-bottom: 0.5rem;
-        }
-
-        .login-section {
-            max-width: 500px;
-            margin: 2rem auto;
-            background: #1a1a1a;
-            padding: 2rem;
-            border-radius: 0.5rem;
-            text-align: center;
-        }
-
-        .login-section input {
-            width: 100%;
-            padding: 0.75rem;
-            margin-bottom: 1rem;
-            border: 1px solid #333;
-            border-radius: 0.375rem;
-            background: #0a0a0a;
-            color: #fff;
-            font-size: 1rem;
-        }
-
-        .login-section button {
-            width: 100%;
-            padding: 0.75rem;
-            background: #2563eb;
-            color: white;
-            border: none;
-            border-radius: 0.375rem;
-            font-weight: bold;
-            cursor: pointer;
-            font-size: 1rem;
-        }
-
-        .stats {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 1rem;
-            margin-bottom: 2rem;
-            max-width: 600px;
-            margin-left: auto;
-            margin-right: auto;
-        }
-
-        .stat-card {
-            background: #1a1a1a;
-            padding: 1rem;
-            border-radius: 0.5rem;
-            text-align: center;
-        }
-
-        .stat-number {
-            font-size: 1.8rem;
-            font-weight: bold;
-        }
-
-        .feeds-wrapper {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 2rem;
-            margin-bottom: 2rem;
-        }
-
-        .feed {
-            background: #0a0a0a;
-            border-radius: 0.5rem;
-            border: 1px solid #222;
-        }
-
-        .feed-header {
-            padding: 1.5rem;
-            border-bottom: 2px solid;
-            text-align: center;
-        }
-
-        .feed-title {
-            font-size: 1.3rem;
-            font-weight: bold;
-        }
-
-        .grid {
-            padding: 1rem;
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 1rem;
-            max-height: 700px;
-            overflow-y: auto;
-        }
-
-        .post-card {
-            border-radius: 0.5rem;
-            overflow: hidden;
-            cursor: pointer;
-            border: 3px solid;
-            transition: all 0.3s;
-        }
-
-        .post-image {
-            width: 100%;
-            height: 150px;
-            object-fit: cover;
-        }
-
-        .post-info {
-            padding: 0.75rem;
-            font-size: 0.85rem;
-        }
-
-        .buttons {
-            text-align: center;
-        }
-
-        button {
-            padding: 0.75rem 1.5rem;
-            background: #2563eb;
-            color: white;
-            border: none;
-            border-radius: 0.375rem;
-            font-weight: bold;
-            cursor: pointer;
-        }
-
-        .hidden {
-            display: none;
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>JAHLCOB Feed Organizer</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
+body{display:flex;flex-direction:column;background:#fafafa}
+header{padding:16px;text-align:center;font-size:22px;font-weight:700;border-bottom:1px solid #ddd;background:#fff;letter-spacing:-0.01em}
+.stats{display:flex;justify-content:center;gap:48px;padding:10px;border-bottom:1px solid #ddd;font-size:12px;color:#666;background:#fff}
+.stats b{display:block;font-weight:700;font-size:17px;color:#111}
+.diag{font-size:11px;text-align:center;padding:4px;color:#c62828;background:#fff3f3;display:none}
+.diag.show{display:block}
+.container{display:grid;grid-template-columns:1fr 1fr;flex:1;min-height:0}
+.section{display:flex;flex-direction:column;min-height:0;border-right:1px solid #ddd}
+.section:last-child{border-right:none}
+.title{padding:10px;font-size:13px;font-weight:600;background:#f5f5f5;border-bottom:1px solid #ddd}
+.archive-title{color:#d32f2f}
+.keep-title{color:#388e3c}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;overflow-y:scroll;background:#ddd;flex:1;align-content:start}
+.card{position:relative;width:100%;padding-top:100%;background:#eee;overflow:hidden;cursor:pointer}
+.card .cover-media{position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .25s ease}
+.card .cover-media.loaded{opacity:1}
+.card .reel-badge{position:absolute;top:6px;right:6px;color:#fff;font-size:11px;text-shadow:0 1px 3px rgba(0,0,0,.6);z-index:2}
+.card.broken{background:repeating-linear-gradient(45deg,#f2f2f2,#f2f2f2 8px,#e6e6e6 8px,#e6e6e6 16px)}
+.card{cursor:grab}
+.card.dragging{opacity:.4}
+.card.drag-over{outline:3px solid #4f8cff;outline-offset:-3px}
+.card .date-badge{position:absolute;left:0;right:0;bottom:0;background:linear-gradient(transparent,rgba(0,0,0,.7));color:#fff;font-size:10px;font-weight:600;padding:4px 5px;display:flex;justify-content:space-between;gap:6px}
+.card .date-badge .metrics{color:#ff8fb3;font-weight:700}
+.card .verified-icon{position:absolute;bottom:22px;right:4px;background:#2e7d32;color:#fff;font-size:10px;font-weight:700;width:16px;height:16px;border-radius:50%;display:flex;align-items:center;justify-content:center;z-index:2}
+.card.broken::after{content:'sin imagen';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:9px;color:#999}
+footer{padding:10px;border-top:1px solid #ddd;display:flex;gap:8px;background:#fff}
+button{flex:1;padding:10px;border:1px solid #ccc;border-radius:6px;cursor:pointer;font-weight:600;font-size:12px;background:#f0f0f0}
+button.export{background:#111;color:#fff;border:none}
+</style>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>🎥 JAHLCOB Feed Organizer</h1>
-            <p>Conecta con Instagram y reorganiza tu feed</p>
-        </header>
+<header>JAHLCOB Feed Organizer</header>
+<div class="stats">
+  <div><b id="total">0</b>Total</div>
+  <div><b id="archived">0</b>Archivar</div>
+  <div><b id="kept">0</b>Mantener</div>
+  <div><b id="broken">0</b>Sin imagen</div>
+  <div><b id="verified">0</b>✓ Verificadas</div>
+</div>
+<div class="diag" id="diag"></div>
+<div class="container">
+  <div class="section">
+    <div class="title archive-title">❌ A ARCHIVAR</div>
+    <div class="grid" id="archive"></div>
+  </div>
+  <div class="section">
+    <div class="title keep-title">✅ A MANTENER</div>
+    <div class="grid" id="keep"></div>
+  </div>
+</div>
+<footer>
+  <button class="export" onclick="exportar()">📥 Exportar JSON</button>
+  <button onclick="reset()">🔄 Reset</button>
+</footer>
 
-        <div id="loginSection" class="login-section">
-            <h2>Login Instagram</h2>
-            <input type="text" id="usernameInput" placeholder="@jahlcob" value="jahlcob">
-            <button onclick="fetchPosts()">Descargar Posts</button>
-            <div id="loadingMsg" class="hidden">Descargando posts...</div>
-        </div>
+<script>
+// ---------- CONFIG ----------
+// Cambia esto si tu carpeta de imágenes o tu JSON tienen otro nombre/ruta.
+const JSON_PATH = 'posts_clean_final.json'; // archivo nuevo: real, deduplicado y ordenado por fecha
+const IMAGES_DIR = 'thumbnails/'; // miniaturas generadas por make_thumbnails.py
+const ORIGINAL_DIR = 'images/';   // originales, usados solo como fallback (ej. reels .mp4)
+const REAL_COVERS_DIR = 'real_covers/'; // portadas verificadas contra Meta Business Suite (prioridad maxima)
+const IMAGE_EXT_FALLBACKS = ['.jpg', '.jpeg', '.JPG', '.png', '.webp']; // fotos
+const VIDEO_EXT_FALLBACKS = ['.mp4', '.mov', '.MP4']; // reels descargados como video crudo
 
-        <div id="appSection" class="hidden">
-            <div class="stats">
-                <div class="stat-card">
-                    <div>Total Posts</div>
-                    <div class="stat-number" id="totalPosts">0</div>
-                </div>
-                <div class="stat-card">
-                    <div>A Archivar</div>
-                    <div class="stat-number" id="archiveCount">0</div>
-                </div>
-                <div class="stat-card">
-                    <div>A Mantener</div>
-                    <div class="stat-number" id="keepCount">0</div>
-                </div>
-            </div>
+let posts = [];
+const status = {};
+let brokenCount = 0;
+let draggedId = null; // para drag & drop de reordenar tarjetas
+const brokenLog = [];
 
-            <div class="feeds-wrapper">
-                <div class="feed">
-                    <div class="feed-header">
-                        <div class="feed-title">❌ A ARCHIVAR</div>
-                    </div>
-                    <div class="grid" id="archiveGrid"></div>
-                </div>
+const archiveGrid = document.getElementById('archive');
+const keepGrid = document.getElementById('keep');
+archiveGrid.addEventListener('scroll', () => keepGrid.scrollTop = archiveGrid.scrollTop);
+keepGrid.addEventListener('scroll', () => archiveGrid.scrollTop = keepGrid.scrollTop);
 
-                <div class="feed">
-                    <div class="feed-header">
-                        <div class="feed-title">✅ A MANTENER</div>
-                    </div>
-                    <div class="grid" id="keepGrid"></div>
-                </div>
-            </div>
+// Tu JSON ya trae un campo "status" (ej. "mantener" / "archivar") de una
+// clasificación previa. La usamos como punto de partida en vez de alternar.
+function initialStatus(p) {
+  const s = String(p.status || '').toLowerCase();
+  if (s.includes('arch')) return 'archive';
+  if (s.includes('manten') || s.includes('keep')) return 'keep';
+  return 'keep'; // default si el campo viene vacío o con un valor inesperado
+}
 
-            <div class="buttons">
-                <button onclick="exportarDecisiones()">📥 Exportar Decisiones</button>
-            </div>
-        </div>
-    </div>
+function postId(p) {
+  // Usamos "id" (tu JSON real), con fallback a image_path por si algún registro no lo trae.
+  return p.id !== undefined && p.id !== null ? p.id : p.image_path;
+}
 
-    <script>
-        let allPosts = [];
+fetch(JSON_PATH)
+  .then(r => {
+    if (!r.ok) throw new Error(`No se pudo cargar ${JSON_PATH} (HTTP ${r.status})`);
+    return r.json();
+  })
+  .then(async data => {
+    posts = data;
+    posts.forEach(p => { status[postId(p)] = initialStatus(p); });
 
-        async function fetchPosts() {
-            const username = document.getElementById('usernameInput').value.replace('@', '');
-            const loadingMsg = document.getElementById('loadingMsg');
-            
-            loadingMsg.classList.remove('hidden');
+    // Aplica el estado compartido guardado en el servidor (archivar/mantener + orden),
+    // si ya alguien lo guardo antes. Si falla o no hay nada guardado, se queda con el orden/estado por defecto.
+    try {
+      const r = await fetch('/api/state');
+      const saved = await r.json();
+      if (saved && saved.status && Object.keys(saved.status).length) {
+        Object.assign(status, saved.status);
+      }
+      if (saved && Array.isArray(saved.order) && saved.order.length) {
+        const byId = new Map(posts.map(p => [String(postId(p)), p]));
+        const ordered = [];
+        saved.order.forEach(id => {
+          const p = byId.get(String(id));
+          if (p) { ordered.push(p); byId.delete(String(id)); }
+        });
+        // cualquier post nuevo que no estuviera en el orden guardado se agrega al final
+        byId.forEach(p => ordered.push(p));
+        posts = ordered;
+      }
+    } catch (e) {
+      console.warn('No se pudo cargar el estado compartido, se usa el local:', e);
+    }
 
-            try {
-                const response = await fetch('/api/fetch-posts', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username })
-                });
+    render();
+  })
+  .catch(err => showDiag(`Error cargando JSON: ${err.message}. Revisa que ${JSON_PATH} esté junto a este HTML y que estés usando un servidor local (no file://).`));
 
-                const data = await response.json();
-                
-                if (data.success) {
-                    allPosts = data.posts;
-                    document.getElementById('loginSection').classList.add('hidden');
-                    document.getElementById('appSection').classList.remove('hidden');
-                    render();
-                } else {
-                    alert('Error: ' + data.error);
-                }
-            } catch (error) {
-                alert('Error: ' + error.message);
-            }
-            
-            loadingMsg.classList.add('hidden');
+// Guarda en el servidor el estado actual (columna de cada post + orden), para que
+// cualquiera que abra la pagina vea los mismos cambios.
+let saveTimeout = null;
+function saveState() {
+  clearTimeout(saveTimeout);
+  saveTimeout = setTimeout(() => {
+    fetch('/api/state', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status, order: posts.map(postId) }),
+    }).catch(e => console.warn('No se pudo guardar el estado:', e));
+  }, 400); // pequeño debounce para no saturar si se hacen varios cambios seguidos
+}
+
+function showDiag(msg) {
+  const d = document.getElementById('diag');
+  d.textContent = '⚠ ' + msg;
+  d.classList.add('show');
+}
+
+function formatNum(n) {
+  n = Number(n) || 0;
+  return n >= 1000 ? (n / 1000).toFixed(1) + 'k' : String(n);
+}
+
+function baseName(path) {
+  return String(path).split('/').pop().split('?')[0];
+}
+
+// El script make_thumbnails.py siempre guarda como stem+'.jpg' dentro de thumbnails/,
+// sin importar la extensión original. Por eso probamos primero eso; si no existe
+// (thumbnail no generado todavía), caemos a la imagen original en images/;
+// y si tampoco hay imagen, probamos como video (reels guardados como .mp4 crudo).
+function attachImageWithFallback(mediaEl, cardEl, exactName, container, realCoverId) {
+  const dotIdx = exactName.lastIndexOf('.');
+  const stem = dotIdx > -1 ? exactName.slice(0, dotIdx) : exactName;
+
+  const thumbAttempts = [IMAGES_DIR + stem + '.jpg'];
+  let originalAttempts = [exactName, ...IMAGE_EXT_FALLBACKS.map(ext => stem + ext)];
+  originalAttempts = [...new Set(originalAttempts)].map(n => ORIGINAL_DIR + n);
+
+  // Si ya verificamos la portada real contra Meta Business Suite, esa va PRIMERO,
+  // antes que las miniaturas viejas (que pueden estar mal emparejadas).
+  const realAttempt = realCoverId ? [REAL_COVERS_DIR + 'cover_' + realCoverId + '.jpg'] : [];
+  const allImageAttempts = [...realAttempt, ...thumbAttempts, ...originalAttempts];
+  let i = 0;
+
+  function tryVideoFallback() {
+    let vi = 0;
+    function tryNextVideo() {
+      if (vi >= VIDEO_EXT_FALLBACKS.length) {
+        cardEl.classList.add('broken');
+        brokenCount++;
+        brokenLog.push(exactName);
+        if (brokenLog.length === 1 || brokenLog.length % 25 === 0) {
+          console.warn(`[JAHLCOB] ${brokenLog.length} portadas sin cargar. Última: ${exactName}`);
         }
+        return;
+      }
+      const candidate = ORIGINAL_DIR + stem + VIDEO_EXT_FALLBACKS[vi];
+      vi++;
+      const video = document.createElement('video');
+      video.muted = true;
+      video.playsInline = true;
+      video.preload = 'metadata';
+      video.className = 'cover-media';
+      video.onerror = tryNextVideo;
+      video.onloadeddata = () => {
+        video.classList.add('loaded');
+        mediaEl.replaceWith(video);
+        const badge = document.createElement('div');
+        badge.className = 'reel-badge';
+        badge.textContent = '▶';
+        container.appendChild(badge);
+      };
+      video.src = candidate;
+    }
+    tryNextVideo();
+  }
 
-        function togglePost(id) {
-            const post = allPosts.find(p => p.id === id);
-            if (post) {
-                post.status = post.status === 'mantener' ? 'archivar' : 'mantener';
-                render();
-            }
-        }
+  function tryNext() {
+    if (i >= allImageAttempts.length) {
+      tryVideoFallback();
+      return;
+    }
+    const candidate = allImageAttempts[i];
+    i++;
+    mediaEl.onerror = tryNext;
+    mediaEl.onload = () => mediaEl.classList.add('loaded');
+    mediaEl.src = candidate;
+  }
+  tryNext();
+}
 
-        function render() {
-            const archiveGrid = document.getElementById('archiveGrid');
-            const keepGrid = document.getElementById('keepGrid');
-            
-            archiveGrid.innerHTML = '';
-            keepGrid.innerHTML = '';
+function render() {
+  archiveGrid.innerHTML = '';
+  keepGrid.innerHTML = '';
+  brokenCount = 0;
+  brokenLog.length = 0;
 
-            const archivePosts = allPosts.filter(p => p.status === "archivar");
-            const keepPosts = allPosts.filter(p => p.status === "mantener");
+  posts.forEach(p => {
+    const card = document.createElement('div');
+    card.className = 'card';
 
-            archivePosts.forEach(post => {
-                archiveGrid.appendChild(createPostCard(post, true));
-            });
+    const img = document.createElement('img');
+    img.className = 'cover-media';
+    img.loading = 'lazy';
+    img.decoding = 'async';
 
-            keepPosts.forEach(post => {
-                keepGrid.appendChild(createPostCard(post, false));
-            });
+    // Fecha siempre visible + métricas reales si las tenemos (último año, desde Meta Business Suite)
+    const dateBadge = document.createElement('div');
+    dateBadge.className = 'date-badge';
+    const metricsHtml = (p.reach !== undefined)
+      ? `<span class="metrics">👁️ ${p.reach} · ❤️ ${p.likes}</span>`
+      : '';
+    dateBadge.innerHTML = `<span>${p.date || ''}</span>${metricsHtml}`;
 
-            document.getElementById('totalPosts').textContent = allPosts.length;
-            document.getElementById('archiveCount').textContent = archivePosts.length;
-            document.getElementById('keepCount').textContent = keepPosts.length;
-        }
+    card.appendChild(img);
+    card.appendChild(dateBadge);
+    attachImageWithFallback(img, card, baseName(p.image_path), card, p.real_cover_id);
+    if (p.real_cover_id) {
+      const verifiedIcon = document.createElement('div');
+      verifiedIcon.className = 'verified-icon';
+      verifiedIcon.textContent = '✓';
+      verifiedIcon.title = 'Portada verificada contra Meta Business Suite';
+      card.appendChild(verifiedIcon);
+    }
 
-        function createPostCard(post, isArchive) {
-            const card = document.createElement('div');
-            card.className = `post-card`;
-            card.style.borderColor = isArchive ? '#ef4444' : '#22c55e';
-            card.style.opacity = isArchive ? '0.65' : '1';
-            card.onclick = () => togglePost(post.id);
-            
-            card.innerHTML = `
-                <img src="${post.url}" class="post-image" alt="${post.couple}">
-                <div class="post-info">
-                    <div>${post.couple}</div>
-                </div>
-            `;
-            
-            return card;
-        }
+    const id = postId(p);
+    card.draggable = true;
+    card.dataset.postId = id;
 
-        function exportarDecisiones() {
-            const archivePosts = allPosts.filter(p => p.status === "archivar");
-            const keepPosts = allPosts.filter(p => p.status === "mantener");
+    card.addEventListener('dragstart', (e) => {
+      draggedId = id;
+      card.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+    });
+    card.addEventListener('dragend', () => {
+      card.classList.remove('dragging');
+      draggedId = null;
+    });
+    card.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      card.classList.add('drag-over');
+    });
+    card.addEventListener('dragleave', () => {
+      card.classList.remove('drag-over');
+    });
+    card.addEventListener('drop', (e) => {
+      e.preventDefault();
+      card.classList.remove('drag-over');
+      if (draggedId === null || draggedId === id) return;
+      const fromIdx = posts.findIndex(x => postId(x) === draggedId);
+      const toIdx = posts.findIndex(x => postId(x) === id);
+      if (fromIdx === -1 || toIdx === -1) return;
+      // solo permitir reordenar dentro de la misma columna (mismo status)
+      if (status[draggedId] !== status[id]) return;
+      const [moved] = posts.splice(fromIdx, 1);
+      const newToIdx = posts.findIndex(x => postId(x) === id);
+      posts.splice(newToIdx, 0, moved);
+      render();
+      saveState();
+    });
 
-            const resumen = {
-                timestamp: new Date().toLocaleString('es-MX'),
-                username: document.getElementById('usernameInput').value,
-                totalPosts: allPosts.length,
-                aArchivar: archivePosts.length,
-                aMantener: keepPosts.length
-            };
+    let dragStartX = 0, dragStartY = 0;
+    card.addEventListener('mousedown', (e) => { dragStartX = e.clientX; dragStartY = e.clientY; });
+    card.onclick = (e) => {
+      // evitar que un arrastre se interprete tambien como click (archivar/mantener)
+      if (Math.abs(e.clientX - dragStartX) > 4 || Math.abs(e.clientY - dragStartY) > 4) return;
+      status[id] = status[id] === 'archive' ? 'keep' : 'archive';
+      render();
+      saveState();
+    };
 
-            const contenido = JSON.stringify(resumen, null, 2);
-            const blob = new Blob([contenido], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `JAHLCOB_Decisiones_${new Date().getTime()}.json`;
-            a.click();
-        }
-    </script>
+    (status[id] === 'archive' ? archiveGrid : keepGrid).appendChild(card);
+  });
+
+  const archived = Object.values(status).filter(s => s === 'archive').length;
+  document.getElementById('total').textContent = posts.length;
+  document.getElementById('archived').textContent = archived;
+  document.getElementById('kept').textContent = posts.length - archived;
+  document.getElementById('broken').textContent = brokenCount;
+  document.getElementById('verified').textContent = posts.filter(p => p.real_cover_id).length;
+
+  if (brokenCount > 0) {
+    showDiag(`${brokenCount} de ${posts.length} imágenes no se encontraron. Revisa la consola (F12) para ver los nombres exactos que fallaron.`);
+  }
+}
+
+function exportar() {
+  const result = posts.map(p => ({
+    id: p.id,
+    couple: p.couple,
+    image_path: p.image_path,
+    status: status[postId(p)] === 'archive' ? 'archivar' : 'mantener'
+  }));
+  const blob = new Blob([JSON.stringify(result, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'jahlcob_clasificacion.json';
+  a.click();
+}
+
+function reset() {
+  if (confirm('¿Resetear todo a "Mantener"?')) {
+    posts.forEach(p => status[postId(p)] = 'keep');
+    render();
+    saveState();
+  }
+}
+</script>
 </body>
 </html>
